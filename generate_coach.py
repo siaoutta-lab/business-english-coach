@@ -54,12 +54,12 @@ Today's Business English Coach ({current_day}·{today_theme})
 [请结合今天的场景，出一道中文翻译题。例如：“这个空调改造方案预计能帮租户节省15%的电费。”]
 """
 
-# 5. 【核心修复点】更换为带完整发布商前缀的绝对路径模型名称
+# 5. 【终极解决方案】直接升级到最稳定的全新 gemini-2.5-flash 模型
 try:
     model = genai.GenerativeModel(
-        model_name="publishers/google/models/gemini-1.5-flash",
+        model_name="gemini-2.5-flash",
     )
-    # 免费层将系统提示词合并传入最安全
+    # 合并系统指令，保证免费层账户的最高兼容性
     response = model.generate_content(
         f"System: 你是一位资深跨国企业商务英语培训师，拥有香港和英国办公室多年工作经验。熟悉 ESCO（能源节能项目）、物业管理、采购招标和高管沟通场景。请根据用户提供的主题出题。\n\nUser: {user_prompt}"
     )
