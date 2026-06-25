@@ -1,7 +1,6 @@
 import os
-import json
 from datetime import datetime
-import requests
+import google.generativeai as genai
 
 # 1. 自动获取今天是周几
 WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -20,11 +19,9 @@ THEMES = {
 
 today_theme = THEMES.get(current_day, "商务英语")
 
-# 3. 从环境变量获取保险箱里的 Key
+# 3. 配置 Gemini API
 gemini_key = os.getenv("AI_API_KEY")
-
-# 【核心修复点】修复了 1.5 Flash 在 v1beta 路径下的标准官方拼写
-url = f"https://generativelanguage.googleapis.com/v1beta/publishers/google/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+genai.configure(api_key=gemini_key)
 
 # 4. 组装 Prompt
 user_prompt = f"""
@@ -57,33 +54,16 @@ Today's Business English Coach ({current_day}·{today_theme})
 [请结合今天的场景，出一道中文翻译题。例如：“这个空调改造方案预计能帮租户节省15%的电费。”]
 """
 
-payload = {
-    "contents": [{
-        "parts": [{"text": user_prompt}]
-    }],
-    "systemInstruction": {
-        "parts": [{"text": (
-            "你是一位资深跨国企业商务英语培训师，拥有香港和英国办公室多年工作经验。"
-            "熟悉 ESCO（能源节能项目）、物业管理、采购招标和高管沟通场景。"
-            "请根据用户提供的【今日主题】，从你的庞大语料库中抽取或编纂最地道、最企业级的表达。"
-        )}]
-    },
-    "generationConfig": {
-        "temperature": 0.7
-    }
-}
-
-headers = {'Content-Type': 'application/json'}
-
-# 5. 发送请求并打印结果
+# 5. 使用免费层最稳固的旧版标准呼叫，完美避开环境冲突
 try:
-    response = requests.post(url, headers=headers, data=json.dumps(payload))
-    response_data = response.json()
-    
-    # 提取生成的文本内容
-    output_text = response_data['candidates'][0]['content']['parts'][0]['text']
-    print(output_text)
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash",
+        generation_config={"temperature": 0.7}
+    )
+    # 免费层必须结合 system_instruction 合并或者直接传入
+    response = model.generate_content(
+        f"System: 你是一位资深跨国企业商务英语培训师，拥有香港和英国办公室多年工作经验。熟悉 ESCO（能源节能项目）、物业管理、采购招标和高管沟通场景。请根据用户提供的主题出题。\n\nUser: {user_prompt}"
+    )
+    print(response.text)
 except Exception as e:
     print(f"呼叫 Gemini 失败了，错误原因: {e}")
-    if 'response' in locals():
-        print(f"服务器返回的原始错误信息: {response.text}")
