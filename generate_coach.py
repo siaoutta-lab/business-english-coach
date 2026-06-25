@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 # 1. 自动获取今天是周几
 WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -19,20 +20,9 @@ THEMES = {
 
 today_theme = THEMES.get(current_day, "商务英语")
 
-# 3. 配置 Gemini API
-# 从 GitHub Secrets 里面抓取你刚才存的 AI_API_KEY
-gemini_key = os.getenv("AI_API_KEY")
-genai.configure(api_key=gemini_key)
-
-# 使用高性价比、速度极快的 gemini-1.5-flash
-model = genai.GenerativeModel(
-    model_name="gemini-1.5-flash",
-    system_instruction=(
-        "你是一位资深跨国企业商务英语培训师，拥有香港和英国办公室多年工作经验。"
-        "熟悉 ESCO（能源节能项目）、物业管理、采购招标和高管沟通场景。"
-        "请根据用户提供的【今日主题】，从你的庞大语料库中抽取或编纂最地道、最企业级的表达。"
-    )
-)
+# 3. 初始化全新版 Gemini 客户端
+# 自动读取环境变量里的 GEMINI_API_KEY
+client = genai.Client()
 
 # 4. 组装 Prompt
 user_prompt = f"""
@@ -65,9 +55,20 @@ Today's Business English Coach ({current_day}·{today_theme})
 [请结合今天的场景，出一道中文翻译题。例如：“这个空调改造方案预计能帮租户节省15%的电费。”]
 """
 
-# 5. 呼叫 Gemini 并打印结果
+# 5. 呼叫新版 Gemini 1.5 Flash 并打印结果
 try:
-    response = model.generate_content(user_prompt)
+    response = client.models.generate_content(
+        model='gemini-1.5-flash',
+        contents=user_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=(
+                "你是一位资深跨国企业商务英语培训师，拥有香港和英国办公室多年工作经验。"
+                "熟悉 ESCO（能源节能项目）、物业管理、采购招标和高管沟通场景。"
+                "请根据用户提供的【今日主题】，从你的庞大语料库中抽取或编纂最地道、最企业级的表达。"
+            ),
+            temperature=0.7,
+        ),
+    )
     print(response.text)
 except Exception as e:
     print(f"呼叫 Gemini 失败了，错误原因: {e}")
