@@ -39,20 +39,18 @@ jobs:
         server_address: smtp.gmail.com
         server_port: 465
         
-        # 【🚨 核心修改点 1】请把下面这一行改成你“发送邮件”的那个真实 Gmail 邮箱地址！
-        username: 把这里删掉换成你用来发信的真实邮箱@gmail.com
+        # 1. 你的发信 Gmail 邮箱账号
+        username: siaoutta@gmail.com
         
-        # 完美对齐你创建的暗号名字 EMAIL_GITHUB
+        # 2. 完美对齐你创建的暗号名字 EMAIL_GITHUB
         password: ${{ secrets.EMAIL_GITHUB }}
         
-        # 邮件标题和发件人昵称
+        # 3. 邮件标题和发件人昵称
         subject: 🚀 今日商务英语每日课 (Daily English Coach)
+        from: AI Coach <siaoutta@gmail.com>
         
-        # 【🚨 核心修改点 2】同样把下面这一行改成你“发送邮件”的那个真实 Gmail 邮箱地址！
-        from: AI Coach <把这里删掉换成你用来发信的真实邮箱@gmail.com>
-        
-        # 【已固定】三个精准的接收人邮箱，用英文逗号隔开
+        # 4. 三个精准的接收人邮箱（包括你自己的收件箱）
         to: siaoutta@gmail.com,267247961@qq.com,caisihao@asp.th.com
         
-        # 邮件内容直接读取 AI 生成的 Markdown 文本
+        # 5. 邮件内容直接读取 AI 生成的 Markdown 文本
         html_body: file://output.md
