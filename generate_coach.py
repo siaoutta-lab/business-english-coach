@@ -23,9 +23,10 @@ today_theme = THEMES.get(current_day, "商务英语")
 # 3. 从环境变量获取保险箱里的 Key
 gemini_key = os.getenv("AI_API_KEY")
 
-# 4. 组装官方标准的 REST API 请求路径和参数
-url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+# 【核心修复点】修复了 1.5 Flash 在 v1beta 路径下的标准官方拼写
+url = f"https://generativelanguage.googleapis.com/v1beta/publishers/google/models/gemini-1.5-flash:generateContent?key={gemini_key}"
 
+# 4. 组装 Prompt
 user_prompt = f"""
 今天是：{current_day}
 今日核心训练主题是：{today_theme}
@@ -78,6 +79,7 @@ headers = {'Content-Type': 'application/json'}
 try:
     response = requests.post(url, headers=headers, data=json.dumps(payload))
     response_data = response.json()
+    
     # 提取生成的文本内容
     output_text = response_data['candidates'][0]['content']['parts'][0]['text']
     print(output_text)
