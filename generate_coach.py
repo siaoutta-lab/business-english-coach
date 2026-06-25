@@ -1,68 +1,86 @@
-import os
-from datetime import datetime
-import google.generativeai as genai
+name: Daily Business English Coach
 
-# 1. 自动获取今天是周几
-WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-current_day = WEEKDAYS[datetime.today().weekday()]
+on:
+  schedule:
+    # 每天北京时间早上 8:30 运行 (UTC 时间 00:30)
+    - cron: '30 0 * * *'
+  workflow_dispatch: # 允许手动触发
 
-# 2. 根据你的 README 排班表，自动匹配今天的学习主题
-THEMES = {
-    "周一": "采购英语 (Procurement & Sourcing) - 结合外贸、招标、供应商沟通",
-    "周二": "项目管理英语 (Project Management) - 结合项目进度、ESCO节能项目、交付",
-    "周三": "物业管理英语 (Property Management) - 结合租户沟通、设施维护、投诉处理",
-    "周四": "工程施工英语 (Engineering & Construction) - 结合施工现场、技术标准、安全规范",
-    "周五": "谈判英语 (Negotiation & Contract) - 结合价格谈判、合同条款、笑着怼人/礼貌发飙",
-    "周六": "Native Speaker表达 (Hong Kong & UK Office Idioms) - 港英办公室地道行话",
-    "周日": "Native Speaker表达 (Hong Kong & UK Office Idioms) - 经典职场行话复盘"
-}
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-today_theme = THEMES.get(current_day, "商务英语")
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v4
 
-# 3. 配置 Gemini API
-gemini_key = os.getenv("AI_API_KEY")
-genai.configure(api_key=gemini_key)
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-# 4. 组装 Prompt
-user_prompt = f"""
-今天是：{current_day}
-今日核心训练主题是：{today_theme}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install google-generativeai markdown
 
-请严格按照以下格式为我生成今天的学习内容（不要包含任何多余的废话和 Markdown 之外的杂质）：
+    # 1. 运行脚本并将 AI 生成的教案保存到 output.md
+    - name: Run Coach Script
+      env:
+        AI_API_KEY: ${{ secrets.AI_API_KEY }}
+      run: |
+        python generate_coach.py > output.md
+        cat output.md
 
-Today's Business English Coach ({current_day}·{today_theme})
----
+    # 2. 用极其简单安全的方式，把 Markdown 转换成干净好看的 HTML 网页邮件
+    - name: Convert Markdown to Beautiful HTML
+      run: |
+        python -c "
+        import markdown
+        with open('output.md', 'r', encoding='utf-8') as f:
+            text = f.read()
+        html_content = markdown.markdown(text, extensions=['extra', 'codehilite'])
+        
+        # 纯静态精美样式，绝对没有任何复杂的 JS 脚本和符号冲突
+        styled_html = f'''
+        <html>
+        <head>
+          <style>
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #333333; max-width: 650px; margin: 0 auto; padding: 20px; }}
+            h1 {{ color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 8px; font-size: 24px; }}
+            h2 {{ color: #202124; font-size: 20px; margin-top: 24px; border-left: 4px solid #1a73e8; padding-left: 10px; }}
+            h3 {{ color: #5f6368; font-size: 16px; }}
+            p, li {{ font-size: 15px; color: #3c4043; }}
+            code {{ background-color: #f1f3f4; color: #b06000; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 14px; }}
+            blockquote {{ background-color: #f8f9fa; border-left: 4px solid #f4b400; margin: 1.5em 0; padding: 12px 20px; font-style: italic; border-radius: 0 8px 8px 0; }}
+            ul, ol {{ padding-left: 20px; }}
+            li {{ margin-bottom: 8px; }}
+            strong {{ color: #000000; background-color: #fff9c4; padding: 0 2px; }}
+            .footer {{ margin-top: 40px; padding-top: 15px; border-top: 1px solid #e8eaed; font-size: 12px; color: #aaabad; text-align: center; }}
+          </style>
+        </head>
+        <body>
+          {html_content}
+          <div class='footer'>🤖 本教案由 AI 英语教练全自动生成派送</div>
+        </body>
+        </html>
+        '''
+        with open('beautiful_output.html', 'w', encoding='utf-8') as f:
+            f.write(styled_html)
+        "
 
-### 📩 1. 今日1句商务英语（正式邮件版）
-* **Expression:** [写出地道的邮件长句或核心短语]
-* **Meaning:** [中文解释]
-* **Example:** [结合节能/物业/采购场景的邮件例句]
-
-### 👥 2. 今日1句会议表达（口语版）
-* **Expression:** [写出会议、开场、讨论或反驳时的口语表达]
-* **Meaning:** [中文解释]
-* **Example:** [口语场景例句]
-
-### 🇬🇧 3. 今日1个Native表达（香港/英国办公室常用）
-* **Expression:** [例如职场黑话、缩写、或俚语，如 Move the needle, Touch base, Keep me in the loop]
-* **Meaning:** [中文解释]
-* **Example:** [例句]
-
----
-### 🎯 Challenge（今日挑战）
-请将以下这句话翻译成地道的商务英语（回复本条消息即可练习）：
-[请结合今天的场景，出一道中文翻译题。例如：“这个空调改造方案预计能帮租户节省15%的电费。”]
-"""
-
-# 5. 【终极解决方案】直接升级到最稳定的全新 gemini-2.5-flash 模型
-try:
-    model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
-    )
-    # 合并系统指令，保证免费层账户的最高兼容性
-    response = model.generate_content(
-        f"System: 你是一位资深跨国企业商务英语培训师，拥有香港和英国办公室多年工作经验。熟悉 ESCO（能源节能项目）、物业管理、采购招标和高管沟通场景。请根据用户提供的主题出题。\n\nUser: {user_prompt}"
-    )
-    print(response.text)
-except Exception as e:
-    print(f"呼叫 Gemini 失败了，错误原因: {e}")
+    # 3. 自动通过 Gmail 发送排版完美的 HTML 邮件
+    - name: Send Mail
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        
+        username: siaoutta@gmail.com
+        password: ${{ secrets.EMAIL_GITHUB }}
+        
+        subject: 🚀 今日商务英语每日课 (Daily English Coach)
+        from: AI Coach <siaoutta@gmail.com>
+        
+        to: siaoutta@gmail.com,267247961@qq.com,caisihao@asp.th.com
+        html_body: file://beautiful_output.html
