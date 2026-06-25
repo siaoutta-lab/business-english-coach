@@ -32,8 +32,8 @@ jobs:
         python generate_coach.py > output.md
         cat output.md
 
-    # 2. 【核心复活】利用安全隔离区，完美注入排版、高亮样式与 AI 语音朗读按钮
-    - name: Convert Markdown to Beautiful HTML with Voice
+    # 【✨ 核心新增】将乱七八糟的 Markdown 转换为排版优雅、带精美样式的 HTML 网页
+    - name: Convert Markdown to Beautiful HTML
       run: |
         python -c "
         import markdown
@@ -41,89 +41,51 @@ jobs:
             text = f.read()
         html_content = markdown.markdown(text, extensions=['extra', 'codehilite'])
         
-        # 写入临时内容，防止大括号冲突
-        with open('content.tmp', 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        "
-        
-        # 使用 EOF 绝对安全保护区，完美拼接 HTML、CSS 与 JavaScript 语音脚本
-        cat << 'EOF' > beautiful_output.html
+        # 注入优雅的全局响应式排版样式（极简、护眼、重点突出）
+        styled_html = f'''
         <html>
         <head>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #333333; max-width: 650px; margin: 0 auto; padding: 20px; }
-            h1 { color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 8px; font-size: 24px; }
-            h2 { color: #202124; font-size: 20px; margin-top: 24px; border-left: 4px solid #1a73e8; padding-left: 10px; }
-            h3 { color: #5f6368; font-size: 16px; }
-            p, li { font-size: 15px; color: #3c4043; }
-            code { background-color: #f1f3f4; color: #b06000; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 14px; }
-            blockquote { background-color: #f8f9fa; border-left: 4px solid #f4b400; margin: 1.5em 0; padding: 12px 20px; font-style: italic; border-radius: 0 8px 8px 0; }
-            ul, ol { padding-left: 20px; }
-            li { margin-bottom: 8px; }
-            strong { color: #000000; background-color: #fff9c4; padding: 0 2px; }
-            
-            /* 智能朗读控制面板样式 */
-            .audio-panel { background: #e8f0fe; border: 1px solid #1a73e8; padding: 15px; border-radius: 8px; margin: 20px 0; display: flex; align-items: center; gap: 10px; }
-            .play-btn { background: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; font-weight: bold; }
-            .play-btn:hover { background: #1557b0; }
-            
-            .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #e8eaed; font-size: 12px; color: #aaabad; text-align: center; }
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #333333; max-width: 650px; margin: 0 auto; padding: 20px; }}
+            h1 {{ color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 8px; font-size: 24px; }}
+            h2 {{ color: #202124; font-size: 20px; margin-top: 24px; border-left: 4px solid #1a73e8; padding-left: 10px; }}
+            h3 {{ color: #5f6368; font-size: 16px; }}
+            p, li {{ font-size: 15px; color: #3c4043; }}
+            code {{ background-color: #f1f3f4; color: #b06000; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 14px; }}
+            blockquote {{ background-color: #f8f9fa; border-left: 4px solid #f4b400; margin: 1.5em 0; padding: 12px 20px; font-style: italic; border-radius: 0 8px 8px 0; }}
+            ul, ol {{ padding-left: 20px; }}
+            li {{ margin-bottom: 8px; }}
+            strong {{ color: #000000; background-color: #fff9c4; padding: 0 2px; }}
+            .footer {{ margin-top: 40px; padding-top: 15px; border-top: 1px solid #e8eaed; font-size: 12px; color: #aaabad; text-align: center; }}
           </style>
         </head>
         <body>
-          <!-- 智能语音播放面板 -->
-          <div class="audio-panel">
-            <span>🎧 <b>AI 语音助教：</b></span>
-            <button class="play-btn" onclick="toggleSpeech()">🔊 朗读整篇教案</button>
-            <button class="play-btn" style="background:#5f6368" onclick="stopSpeech()">⏹️ 停止</button>
-          </div>
-
-          <div id="lesson-content">
-        EOF
-
-        # 动态塞入 AI 生成的内容
-        cat content.tmp >> beautiful_output.html
-
-        # 闭合网页并注入点击朗读的 JavaScript 逻辑
-        cat << 'EOF' >> beautiful_output.html
-          </div>
+          {html_content}
           <div class='footer'>🤖 本教案由 AI 英语教练全自动生成派送</div>
-
-          <script>
-            let synth = window.speechSynthesis;
-            let utterance = null;
-
-            function toggleSpeech() {
-              if (synth.speaking) {
-                synth.cancel();
-              }
-              let textToRead = document.getElementById('lesson-content').innerText;
-              utterance = new SpeechSynthesisUtterance(textToRead);
-              utterance.lang = 'en-US'; 
-              utterance.rate = 0.95; 
-              synth.speak(utterance);
-            }
-
-            function stopSpeech() {
-              synth.cancel();
-            }
-          </script>
         </body>
         </html>
-        EOF
+        '''
+        with open('beautiful_output.html', 'w', encoding='utf-8') as f:
+            f.write(styled_html)
+        "
 
-    # 3. 自动通过 Gmail 发送带语音朗读的完美 HTML 邮件
+    # 2. 自动通过 Gmail 发送排版完美的 HTML 邮件
     - name: Send Mail
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
         server_port: 465
         
+        # 账号与密码
         username: siaoutta@gmail.com
         password: ${{ secrets.EMAIL_GITHUB }}
         
+        # 邮件标题和发件人
         subject: 🚀 今日商务英语每日课 (Daily English Coach)
         from: AI Coach <siaoutta@gmail.com>
         
+        # 接收人列表
         to: siaoutta@gmail.com,267247961@qq.com,caisihao@asp.th.com
+        
+        # 【✨ 核心修正】改用精心渲染过的完美 HTML 文件
         html_body: file://beautiful_output.html
