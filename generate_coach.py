@@ -54,10 +54,10 @@ Today's Business English Coach ({current_day}·{today_theme})
 [请结合今天的场景，出一道中文翻译题。例如：“这个空调改造方案预计能帮租户节省15%的电费。”]
 """
 
-# 5. 使用免费层最稳固的旧版标准呼叫，完美避开环境冲突
+# 5. 【核心修复点】更换为带完整发布商前缀的绝对路径模型名称
 try:
     model = genai.GenerativeModel(
-        model_name="gemini-1.5-flash",
+        model_name="publishers/google/models/gemini-1.5-flash",
     )
     # 免费层将系统提示词合并传入最安全
     response = model.generate_content(
