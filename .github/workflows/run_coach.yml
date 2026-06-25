@@ -87,7 +87,7 @@ jobs:
             sys.exit(1)
         "
 
-    # 2. Markdown 转换为专为黑白屏幕优化的精美高对比度网页（无任何语音/播放组件）
+    # 2. Markdown 转换为专为黑白屏幕优化的 Calibri 高对比度网页
     - name: Convert Markdown to Beautiful HTML
       run: |
         python -c "
@@ -96,19 +96,19 @@ jobs:
             text = f.read()
         html_content = markdown.markdown(text, extensions=['extra', 'codehilite'])
         
-        # 移除原有的淡蓝色，全部改用深黑/灰色高对比度排版，彻底适配黑白屏幕
+        # 移除了所有复杂的蓝调，英文字体首选 Calibri，在黑白高对比度下极为清晰
         styled_html = f'''
         <html>
         <head>
           <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #000000; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #ffffff; }}
+            body {{ font-family: 'Calibri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #000000; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #ffffff; }}
             h1 {{ color: #000000; border-bottom: 3px solid #000000; padding-bottom: 8px; font-size: 22px; margin-top: 10px; }}
             h2 {{ color: #000000; font-size: 18px; margin-top: 28px; border-left: 5px solid #333333; padding-left: 10px; }}
             ul, ol {{ padding-left: 20px; }}
             li {{ margin-bottom: 12px; font-size: 15px; color: #111111; }}
             
-            /* 针对黑白屏幕优化的核心粗体与高亮表达样式 */
-            strong {{ color: #000000; background-color: #e0e0e0; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: bold; }}
+            /* 粗体英文核心表达同样采用 Calibri 的等宽变体或标准加粗 */
+            strong {{ color: #000000; background-color: #e0e0e0; padding: 2px 6px; border-radius: 4px; font-family: 'Calibri', monospace; font-weight: bold; }}
             
             .footer {{ margin-top: 50px; padding-top: 15px; border-top: 1px dashed #777777; font-size: 12px; color: #555555; text-align: center; }}
           </style>
@@ -140,3 +140,4 @@ jobs:
         
         to: siaoutta@gmail.com,267247961@qq.com,caisihao@asp.th.com
         html_body: file://beautiful_output.html
+        
