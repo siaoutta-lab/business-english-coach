@@ -1,7 +1,7 @@
 import os
+import json
 from datetime import datetime
-from google import genai
-from google.genai import types
+import requests
 
 # 1. 自动获取今天是周几
 WEEKDAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -20,11 +20,12 @@ THEMES = {
 
 today_theme = THEMES.get(current_day, "商务英语")
 
-# 3. 初始化全新版 Gemini 客户端
-# 自动读取环境变量里的 GEMINI_API_KEY
-client = genai.Client()
+# 3. 从环境变量获取保险箱里的 Key
+gemini_key = os.getenv("AI_API_KEY")
 
-# 4. 组装 Prompt
+# 4. 组装官方标准的 REST API 请求路径和参数
+url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+
 user_prompt = f"""
 今天是：{current_day}
 今日核心训练主题是：{today_theme}
@@ -55,20 +56,32 @@ Today's Business English Coach ({current_day}·{today_theme})
 [请结合今天的场景，出一道中文翻译题。例如：“这个空调改造方案预计能帮租户节省15%的电费。”]
 """
 
-# 5. 呼叫新版 Gemini 1.5 Flash 并打印结果
+payload = {
+    "contents": [{
+        "parts": [{"text": user_prompt}]
+    }],
+    "systemInstruction": {
+        "parts": [{"text": (
+            "你是一位资深跨国企业商务英语培训师，拥有香港和英国办公室多年工作经验。"
+            "熟悉 ESCO（能源节能项目）、物业管理、采购招标和高管沟通场景。"
+            "请根据用户提供的【今日主题】，从你的庞大语料库中抽取或编纂最地道、最企业级的表达。"
+        )}]
+    },
+    "generationConfig": {
+        "temperature": 0.7
+    }
+}
+
+headers = {'Content-Type': 'application/json'}
+
+# 5. 发送请求并打印结果
 try:
-    response = client.models.generate_content(
-        model='gemini-1.5-flash',
-        contents=user_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=(
-                "你是一位资深跨国企业商务英语培训师，拥有香港和英国办公室多年工作经验。"
-                "熟悉 ESCO（能源节能项目）、物业管理、采购招标和高管沟通场景。"
-                "请根据用户提供的【今日主题】，从你的庞大语料库中抽取或编纂最地道、最企业级的表达。"
-            ),
-            temperature=0.7,
-        ),
-    )
-    print(response.text)
+    response = requests.post(url, headers=headers, data=json.dumps(payload))
+    response_data = response.json()
+    # 提取生成的文本内容
+    output_text = response_data['candidates'][0]['content']['parts'][0]['text']
+    print(output_text)
 except Exception as e:
     print(f"呼叫 Gemini 失败了，错误原因: {e}")
+    if 'response' in locals():
+        print(f"服务器返回的原始错误信息: {response.text}")
