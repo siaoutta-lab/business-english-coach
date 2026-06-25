@@ -87,79 +87,43 @@ jobs:
             sys.exit(1)
         "
 
-    # 2. Markdown 转换为带有你最喜欢的【🎧 语音朗读按钮】的精美网页
-    - name: Convert Markdown to Beautiful HTML with Voice
+    # 2. Markdown 转换为专为黑白屏幕优化的精美高对比度网页（无任何语音/播放组件）
+    - name: Convert Markdown to Beautiful HTML
       run: |
         python -c "
         import markdown
         with open('output.md', 'r', encoding='utf-8') as f:
             text = f.read()
         html_content = markdown.markdown(text, extensions=['extra', 'codehilite'])
-        with open('content.tmp', 'w', encoding='utf-8') as f:
-            f.write(html_content)
-        "
         
-        # 终极保护区：通过独立的 cat << 'EOF' 完全隔离 JavaScript 与 CSS 的大括号，阻断一切语法报错
-        cat << 'EOF' > beautiful_output.html
+        # 移除原有的淡蓝色，全部改用深黑/灰色高对比度排版，彻底适配黑白屏幕
+        styled_html = f'''
         <html>
         <head>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #333333; max-width: 650px; margin: 0 auto; padding: 20px; }
-            h1 { color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 8px; font-size: 22px; }
-            h2 { color: #202124; font-size: 18px; margin-top: 24px; border-left: 4px solid #1a73e8; padding-left: 10px; }
-            ul, ol { padding-left: 20px; }
-            li { margin-bottom: 10px; font-size: 15px; color: #3c4043; }
-            strong { color: #1a73e8; background-color: #f1f3f4; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; }
+            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #000000; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #ffffff; }}
+            h1 {{ color: #000000; border-bottom: 3px solid #000000; padding-bottom: 8px; font-size: 22px; margin-top: 10px; }}
+            h2 {{ color: #000000; font-size: 18px; margin-top: 28px; border-left: 5px solid #333333; padding-left: 10px; }}
+            ul, ol {{ padding-left: 20px; }}
+            li {{ margin-bottom: 12px; font-size: 15px; color: #111111; }}
             
-            /* 智能朗读控制面板样式 */
-            .audio-panel { background: #e8f0fe; border: 1px solid #1a73e8; padding: 15px; border-radius: 8px; margin: 20px 0; display: flex; align-items: center; gap: 10px; }
-            .play-btn { background: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; font-weight: bold; }
-            .play-btn:hover { background: #1557b0; }
+            /* 针对黑白屏幕优化的核心粗体与高亮表达样式 */
+            strong {{ color: #000000; background-color: #e0e0e0; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; font-weight: bold; }}
             
-            .footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #e8eaed; font-size: 12px; color: #aaabad; text-align: center; }
+            .footer {{ margin-top: 50px; padding-top: 15px; border-top: 1px dashed #777777; font-size: 12px; color: #555555; text-align: center; }}
           </style>
         </head>
         <body>
-          <!-- 智能语音播放面板 -->
-          <div class="audio-panel">
-            <span>🎧 <b>AI 语音助教：</b></span>
-            <button class="play-btn" onclick="toggleSpeech()">🔊 朗读整篇教案</button>
-            <button class="play-btn" style="background:#5f6368" onclick="stopSpeech()">⏹️ 停止</button>
-          </div>
-
           <div id="lesson-content">
-        EOF
-
-        # 把刚才渲染好的文本无缝拼进去
-        cat content.tmp >> beautiful_output.html
-
-        # 闭合网页并安全注入朗读 JavaScript 逻辑
-        cat << 'EOF' >> beautiful_output.html
+            {html_content}
           </div>
           <div class='footer'>🤖 本教案由 AI 英语教练全自动生成派送</div>
-
-          <script>
-            let synth = window.speechSynthesis;
-            let utterance = null;
-
-            function toggleSpeech() {
-              if (synth.speaking) {
-                synth.cancel();
-              }
-              let textToRead = document.getElementById('lesson-content').innerText;
-              utterance = new SpeechSynthesisUtterance(textToRead);
-              utterance.lang = 'en-US'; 
-              utterance.rate = 0.95; 
-              synth.speak(utterance);
-            }
-
-            function stopSpeech() {
-              synth.cancel();
-            }
-          </script>
         </body>
         </html>
-        EOF
+        '''
+        with open('beautiful_output.html', 'w', encoding='utf-8') as f:
+            f.write(styled_html)
+        "
 
     # 3. 群发完美的 HTML 邮件
     - name: Send Mail
