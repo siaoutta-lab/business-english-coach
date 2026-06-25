@@ -24,94 +24,14 @@ jobs:
         python -m pip install --upgrade pip
         pip install google-generativeai markdown
 
-    # 1. 运行脚本并将 AI 生成的纯文本教案保存到 output.md
+    # 1. 运行脚本（脚本会自动生成 output.md 并将其自动转化为 beautiful_output.html）
     - name: Run Coach Script
       env:
         AI_API_KEY: ${{ secrets.AI_API_KEY }}
       run: |
-        python generate_coach.py > output.md
-        cat output.md
+        python generate_coach.py
 
-    # 2. 将 Markdown 转换为带“真人朗读按钮”的完美 HTML
-    - name: Convert Markdown to Beautiful HTML
-      run: |
-        python -c "
-        import markdown
-        with open('output.md', 'r', encoding='utf-8') as f:
-            text = f.read()
-        html_content = markdown.markdown(text, extensions=['extra', 'codehilite'])
-        
-        # 注入优雅的排版样式 + 语音朗读控制面板
-        styled_html = f'''
-        <html>
-        <head>
-          <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #333333; max-width: 650px; margin: 0 auto; padding: 20px; }}
-            h1 {{ color: #1a73e8; border-bottom: 2px solid #e8eaed; padding-bottom: 8px; font-size: 24px; }}
-            h2 {{ color: #202124; font-size: 20px; margin-top: 24px; border-left: 4px solid #1a73e8; padding-left: 10px; }}
-            h3 {{ color: #5f6368; font-size: 16px; }}
-            p, li {{ font-size: 15px; color: #3c4043; }}
-            code {{ background-color: #f1f3f4; color: #b06000; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 14px; }}
-            blockquote {{ background-color: #f8f9fa; border-left: 4px solid #f4b400; margin: 1.5em 0; padding: 12px 20px; font-style: italic; border-radius: 0 8px 8px 0; }}
-            ul, ol {{ padding-left: 20px; }}
-            li {{ margin-bottom: 8px; }}
-            strong {{ color: #000000; background-color: #fff9c4; padding: 0 2px; }}
-            
-            /* 朗读播放器样式 */
-            .audio-panel {{ background: #e8f0fe; border: 1px solid #1a73e8; padding: 15px; border-radius: 8px; margin: 20px 0; display: flex; align-items: center; gap: 10px; }}
-            .play-btn {{ background: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; font-weight: bold; }}
-            .play-btn:hover {{ background: #1557b0; }}
-            
-            .footer {{ margin-top: 40px; padding-top: 15px; border-top: 1px solid #e8eaed; font-size: 12px; color: #aaabad; text-align: center; }}
-          </style>
-        </head>
-        <body>
-          <!-- 智能语音播放面板 -->
-          <div class="audio-panel">
-            <span>🎧 <b>AI 语音助教：</b></span>
-            <button class="play-btn" onclick="toggleSpeech()">🔊 朗读整篇教案</button>
-            <button class="play-btn" style="background:#5f6368" onclick="stopSpeech()">⏹️ 停止</button>
-          </div>
-
-          <div id="lesson-content">
-            {html_content}
-          </div>
-
-          <div class='footer'>🤖 本教案由 AI 英语教练全自动生成派送</div>
-
-          <!-- 语音朗读核心脚本 -->
-          <script>
-            let synth = window.speechSynthesis;
-            let utterance = null;
-
-            function toggleSpeech() {{
-              if (synth.speaking) {{
-                synth.cancel(); // 如果正在读，点一下先重置
-              }
-              
-              // 自动提取网页中所有的文本内容
-              let textToRead = document.getElementById('lesson-content').innerText;
-              utterance = new SpeechSynthesisUtterance(textToRead);
-              
-              // 强制设定为纯正的地道英语发音 (en-US / en-GB)
-              utterance.lang = 'en-US'; 
-              utterance.rate = 0.95; // 稍微放慢一点点语速，更方便跟读学习
-              
-              synth.speak(utterance);
-            }}
-
-            function stopSpeech() {{
-              synth.cancel();
-            }}
-          </script>
-        </body>
-        </html>
-        '''
-        with open('beautiful_output.html', 'w', encoding='utf-8') as f:
-            f.write(styled_html)
-        "
-
-    # 3. 自动通过 Gmail 发送带语音功能的 HTML 邮件
+    # 2. 自动通过 Gmail 发送带语音功能的精美 HTML 邮件
     - name: Send Mail
       uses: dawidd6/action-send-mail@v3
       with:
