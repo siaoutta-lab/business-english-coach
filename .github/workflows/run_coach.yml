@@ -22,16 +22,17 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install google-generativeai markdown
+        pip install google-generativeai
 
-    # 1. 运行脚本（脚本会自动生成 output.md 并将其自动转化为 beautiful_output.html）
+    # 1. 运行脚本并将 AI 生成的纯文本教案直接保存到 output.txt
     - name: Run Coach Script
       env:
         AI_API_KEY: ${{ secrets.AI_API_KEY }}
       run: |
-        python generate_coach.py
+        python generate_coach.py > output.txt
+        cat output.txt
 
-    # 2. 自动通过 Gmail 发送带语音功能的精美 HTML 邮件
+    # 2. 自动通过 Gmail 发送纯文本邮件
     - name: Send Mail
       uses: dawidd6/action-send-mail@v3
       with:
@@ -45,4 +46,5 @@ jobs:
         from: AI Coach <siaoutta@gmail.com>
         
         to: siaoutta@gmail.com,267247961@qq.com,caisihao@asp.th.com
-        html_body: file://beautiful_output.html
+        # 直接发送原始纯文本，没有任何格式转换，零出错率！
+        body: file://output.txt
