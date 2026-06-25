@@ -32,7 +32,7 @@ jobs:
         python generate_coach.py > output.md
         cat output.md
 
-    # 【✨ 核心新增】将乱七八糟的 Markdown 转换为排版优雅、带精美样式的 HTML 网页
+    # 2. 将 Markdown 转换为带“真人朗读按钮”的完美 HTML
     - name: Convert Markdown to Beautiful HTML
       run: |
         python -c "
@@ -41,7 +41,7 @@ jobs:
             text = f.read()
         html_content = markdown.markdown(text, extensions=['extra', 'codehilite'])
         
-        # 注入优雅的全局响应式排版样式（极简、护眼、重点突出）
+        # 注入优雅的排版样式 + 语音朗读控制面板
         styled_html = f'''
         <html>
         <head>
@@ -56,12 +56,54 @@ jobs:
             ul, ol {{ padding-left: 20px; }}
             li {{ margin-bottom: 8px; }}
             strong {{ color: #000000; background-color: #fff9c4; padding: 0 2px; }}
+            
+            /* 朗读播放器样式 */
+            .audio-panel {{ background: #e8f0fe; border: 1px solid #1a73e8; padding: 15px; border-radius: 8px; margin: 20px 0; display: flex; align-items: center; gap: 10px; }}
+            .play-btn {{ background: #1a73e8; color: white; border: none; padding: 8px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; font-weight: bold; }}
+            .play-btn:hover {{ background: #1557b0; }}
+            
             .footer {{ margin-top: 40px; padding-top: 15px; border-top: 1px solid #e8eaed; font-size: 12px; color: #aaabad; text-align: center; }}
           </style>
         </head>
         <body>
-          {html_content}
+          <!-- 智能语音播放面板 -->
+          <div class="audio-panel">
+            <span>🎧 <b>AI 语音助教：</b></span>
+            <button class="play-btn" onclick="toggleSpeech()">🔊 朗读整篇教案</button>
+            <button class="play-btn" style="background:#5f6368" onclick="stopSpeech()">⏹️ 停止</button>
+          </div>
+
+          <div id="lesson-content">
+            {html_content}
+          </div>
+
           <div class='footer'>🤖 本教案由 AI 英语教练全自动生成派送</div>
+
+          <!-- 语音朗读核心脚本 -->
+          <script>
+            let synth = window.speechSynthesis;
+            let utterance = null;
+
+            function toggleSpeech() {{
+              if (synth.speaking) {{
+                synth.cancel(); // 如果正在读，点一下先重置
+              }
+              
+              // 自动提取网页中所有的文本内容
+              let textToRead = document.getElementById('lesson-content').innerText;
+              utterance = new SpeechSynthesisUtterance(textToRead);
+              
+              // 强制设定为纯正的地道英语发音 (en-US / en-GB)
+              utterance.lang = 'en-US'; 
+              utterance.rate = 0.95; // 稍微放慢一点点语速，更方便跟读学习
+              
+              synth.speak(utterance);
+            }}
+
+            function stopSpeech() {{
+              synth.cancel();
+            }}
+          </script>
         </body>
         </html>
         '''
@@ -69,23 +111,18 @@ jobs:
             f.write(styled_html)
         "
 
-    # 2. 自动通过 Gmail 发送排版完美的 HTML 邮件
+    # 3. 自动通过 Gmail 发送带语音功能的 HTML 邮件
     - name: Send Mail
       uses: dawidd6/action-send-mail@v3
       with:
         server_address: smtp.gmail.com
         server_port: 465
         
-        # 账号与密码
         username: siaoutta@gmail.com
         password: ${{ secrets.EMAIL_GITHUB }}
         
-        # 邮件标题和发件人
         subject: 🚀 今日商务英语每日课 (Daily English Coach)
         from: AI Coach <siaoutta@gmail.com>
         
-        # 接收人列表
         to: siaoutta@gmail.com,267247961@qq.com,caisihao@asp.th.com
-        
-        # 【✨ 核心修正】改用精心渲染过的完美 HTML 文件
         html_body: file://beautiful_output.html
