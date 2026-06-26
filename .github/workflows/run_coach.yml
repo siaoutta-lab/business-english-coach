@@ -2,8 +2,9 @@ name: Daily Business English Coach
 
 on:
   schedule:
-    # 每天北京时间早上 8:30 运行 (UTC 时间 00:30)
-    - cron: '30 0 * * *'
+    # 5 22 代表世界标准时间 (UTC) 的 22:05
+    # 正好对应北京/曼谷时间的早上 06:05（避开整点高峰，发送更准时）
+    - cron: '5 22 * * *'
   workflow_dispatch: # 允许手动触发
 
 jobs:
@@ -11,133 +12,168 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository code
-      uses: actions/checkout@v4
+      - name: Checkout repository code
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install google-generativeai markdown
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install google-generativeai markdown
 
-    # 1. 运行 AI 脚本生成内容（严格遵循周一至周日日程和最新的结构化格式）
-    - name: Run Coach Script
-      env:
-        AI_API_KEY: ${{ secrets.AI_API_KEY }}
-      run: |
-        python -c "
-        import os, sys, datetime
-        import google.generativeai as genai
+      # 1. 运行 AI 脚本生成内容（严格遵循周一至周日日程和最新的结构化格式）
+      - name: Run Coach Script
+        env:
+          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+        run: |
+          python -c "
+          import os, sys, datetime
+          import google.generativeai as genai
 
-        api_key = os.environ.get('AI_API_KEY')
-        if not api_key:
-            print('Error: AI_API_KEY not found')
-            sys.exit(1)
+          api_key = os.environ.get('AI_API_KEY')
+          if not api_key:
+              print('Error: AI_API_KEY not found')
+              sys.exit(1)
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+          genai.configure(api_key=api_key)
+          model = genai.GenerativeModel('gemini-2.5-flash')
 
-        weekday = datetime.datetime.now().isoweekday()
-        schedule_map = {
-            1: '周一·职场社交与破冰 (Networking & Icebreaking)',
-            2: '周二·日常工作汇报与会议 (Status Updates & Meetings)',
-            3: '周三·商务谈判与说服技巧 (Negotiation & Persuasion)',
-            4: '周四·工程施工英语 (Engineering & Construction) - 结合施工现场、技术标准、安全规范',
-            5: '周五·商业演讲与方案汇报 (Presentations & Pitches)',
-            6: '周六·职场邮件与书面写作 (Business Writing & Emails)',
-            7: '周日·本周核心回顾与综合练习 (Weekly Review & Integration)'
-        }
-        today_theme = schedule_map.get(weekday, '商务英语核心课')
+          weekday = datetime.datetime.now().isoweekday()
+          schedule_map = {
+              1: '周一·职场社交与破冰 (Networking & Icebreaking)',
+              2: '周二·日常工作汇报与会议 (Status Updates & Meetings)',
+              3: '周三·商务谈判与说服技巧 (Negotiation & Persuasion)',
+              4: '周四·工程施工英语 (Engineering & Construction) - 结合施工现场、技术标准、安全规范',
+              5: '周五·商业演讲与方案汇报 (Presentations & Pitches)',
+              6: '周六·职场邮件与书面写作 (Business Writing & Emails)',
+              7: '周日·本周核心回顾与综合练习 (Weekly Review & Integration)'
+          }
+          today_theme = schedule_map.get(weekday, '商务英语核心课')
 
-        prompt = f'''
-        你是一位高级商务英语教练。请为我的小伙伴们严格按照以下【结构化版式】生成今天的课程。
-        今天的主题必须严格符合日程要求：{today_theme}。
+          prompt = f'''
+          你是一位高级商务英语教练。请为我的小伙伴们严格按照以下【结构化版式】生成今天的课程。
+          今天的主题必须严格符合日程要求：{today_theme}。
+          请严格使用以下 Markdown 格式进行输出，标题和各部分小标题必须完全保持一致，不要夹杂多余的废话：
 
-        请严格使用以下 Markdown 格式进行输出，标题和各部分小标题必须完全保持一致，不要夹杂多余的废话：
+          # 🚀 Today's Business English Coach ({today_theme})
 
-        # 🚀 Today's Business English Coach ({today_theme})
+          ## 📩 1. 今日1句商务英语（正式邮件版）
+          *   **Expression**: [核心英文表达]
+          *   **Meaning**: [精准的中文翻译]
+          *   **Example**: [职场真实邮件应用上下文例句]
 
-        ## 📩 1. 今日1句商务英语（正式邮件版）
-        *   **Expression**: [核心英文表达]
-        *   **Meaning**: [精准的中文翻译]
-        *   **Example**: [职场真实邮件应用上下文例句]
+          ## 👥 2. 今日1句会议表达（口语版）
+          *   **Expression**: [核心会议英文口语表达]
+          *   **Meaning**: [精准的中文翻译]
+          *   **Example**: [开会或讨论时的真实对话/发言例句]
 
-        ## 👥 2. 今日1句会议表达（口语版）
-        *   **Expression**: [核心会议英文口语表达]
-        *   **Meaning**: [精准的中文翻译]
-        *   **Example**: [开会或讨论时的真实对话/发言例句]
+          ## 🇬🇧 3. 今日1个Native表达（香港/英国办公室常用）
+          *   **Expression**: [地道的本土职场习惯用语/俚语/短语]
+          *   **Meaning**: [精准的中文翻译]
+          *   **Example**: [日常办公场景的生动例句]
+          '''
 
-        ## 🇬🇧 3. 今日1个Native表达（香港/英国办公室常用）
-        *   **Expression**: [地道的本土职场习惯用语/俚语/短语]
-        *   **Meaning**: [精准的中文翻译]
-        *   **Example**: [日常办公场景的生动例句]
-        '''
+          try:
+              response = model.generate_content(prompt)
+              with open('output.md', 'w', encoding='utf-8') as f:
+                  f.write(response.text)
+              print('AI 生成结构化文本成功！')
+          except Exception as e:
+              print(f'AI 生成失败: {e}')
+              sys.exit(1)
+          "
 
-        try:
-            response = model.generate_content(prompt)
-            with open('output.md', 'w', encoding='utf-8') as f:
-                f.write(response.text)
-            print('AI 生成结构化文本成功！')
-        except Exception as e:
-            print(f'AI 生成失败: {e}')
-            sys.exit(1)
-        "
+      # 2. Markdown 转换为专为黑白屏幕优化的 Calibri 高对比度网页
+      - name: Convert Markdown to Beautiful HTML
+        run: |
+          python -c "
+          import markdown
+          with open('output.md', 'r', encoding='utf-8') as f:
+              text = f.read()
 
-    # 2. Markdown 转换为专为黑白屏幕优化的 Calibri 高对比度网页
-    - name: Convert Markdown to Beautiful HTML
-      run: |
-        python -c "
-        import markdown
-        with open('output.md', 'r', encoding='utf-8') as f:
-            text = f.read()
-        html_content = markdown.markdown(text, extensions=['extra', 'codehilite'])
-        
-        # 移除了所有复杂的蓝调，英文字体首选 Calibri，在黑白高对比度下极为清晰
-        styled_html = f'''
-        <html>
-        <head>
+          html_content = markdown.markdown(text, extensions=['extra', 'codehilite'])
+
+          # 移除了所有复杂的蓝调，英文字体首选 Calibri，在黑白高对比度下极为清晰
+          styled_html = f'''
+          <html>
+          <head>
           <style>
-            body {{ font-family: 'Calibri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.7; color: #000000; max-width: 650px; margin: 0 auto; padding: 20px; background-color: #ffffff; }}
-            h1 {{ color: #000000; border-bottom: 3px solid #000000; padding-bottom: 8px; font-size: 22px; margin-top: 10px; }}
-            h2 {{ color: #000000; font-size: 18px; margin-top: 28px; border-left: 5px solid #333333; padding-left: 10px; }}
-            ul, ol {{ padding-left: 20px; }}
-            li {{ margin-bottom: 12px; font-size: 15px; color: #111111; }}
-            
-            /* 粗体英文核心表达同样采用 Calibri 的等宽变体或标准加粗 */
-            strong {{ color: #000000; background-color: #e0e0e0; padding: 2px 6px; border-radius: 4px; font-family: 'Calibri', monospace; font-weight: bold; }}
-            
-            .footer {{ margin-top: 50px; padding-top: 15px; border-top: 1px dashed #777777; font-size: 12px; color: #555555; text-align: center; }}
+              body {{
+                  font-family: 'Calibri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                  line-height: 1.7;
+                  color: #000000;
+                  max-width: 650px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  background-color: #ffffff;
+              }}
+              h1 {{
+                  color: #000000;
+                  border-bottom: 3px solid #000000;
+                  padding-bottom: 8px;
+                  font-size: 22px;
+                  margin-top: 10px;
+              }}
+              h2 {{
+                  color: #000000;
+                  font-size: 18px;
+                  margin-top: 28px;
+                  border-left: 5px solid #333333;
+                  padding-left: 10px;
+              }}
+              ul, ol {{
+                  padding-left: 20px;
+              }}
+              li {{
+                  margin-bottom: 12px;
+                  font-size: 15px;
+                  color: #111111;
+              }}
+              /* 粗体英文核心表达同样采用 Calibri 的等宽变体或标准加粗 */
+              strong {{
+                  color: #000000;
+                  background-color: #e0e0e0;
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  font-family: 'Calibri', monospace;
+                  font-weight: bold;
+              }}
+              .footer {{
+                  margin-top: 50px;
+                  padding-top: 15px;
+                  border-top: 1px dashed #777777;
+                  font-size: 12px;
+                  color: #555555;
+                  text-align: center;
+              }}
           </style>
-        </head>
-        <body>
-          <div id="lesson-content">
-            {html_content}
-          </div>
-          <div class='footer'>🤖 本教案由 AI 英语教练全自动生成派送</div>
-        </body>
-        </html>
-        '''
-        with open('beautiful_output.html', 'w', encoding='utf-8') as f:
-            f.write(styled_html)
-        "
+          </head>
+          <body>
+              <div id=\"lesson-content\">
+                  {html_content}
+              </div>
+              <div class='footer'>🤖 本教案由 AI 英语教练全自动生成派送</div>
+          </body>
+          </html>
+          '''
 
-    # 3. 群发完美的 HTML 邮件
-    - name: Send Mail
-      uses: dawidd6/action-send-mail@v3
-      with:
-        server_address: smtp.gmail.com
-        server_port: 465
-        
-        username: siaoutta@gmail.com
-        password: ${{ secrets.EMAIL_GITHUB }}
-        
-        subject: 🚀 今日商务英语每日课 (Daily English Coach)
-        from: AI Coach <siaoutta@gmail.com>
-        
-        to: siaoutta@gmail.com,267247961@qq.com,caisihao@asp.th.com
-        html_body: file://beautiful_output.html
-        
+          with open('beautiful_output.html', 'w', encoding='utf-8') as f:
+              f.write(styled_html)
+          "
+
+      # 3. 群发完美的 HTML 邮件
+      - name: Send Mail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: siaoutta@gmail.com
+          password: ${{ secrets.EMAIL_GITHUB }}
+          subject: 🚀 今日商务英语每日课 (Daily English Coach)
+          from: AI Coach <siaoutta@gmail.com>
+          to: siaoutta@gmail.com,267247961@qq.com,caisihao@asp.th.com
+          html_body: file://beautiful_output.html
